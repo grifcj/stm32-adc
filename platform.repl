@@ -27,6 +27,9 @@ syscfg: Python.PythonPeripheral @ sysbus 0x40013808
     initable: true
     script: "request.value = 0"
 
+adc1: Analog.STM32_ADC @ sysbus 0x40012000
+    -> nvic@18
+
 LED1: Miscellaneous.LED @ gpioPortG
 LED2: Miscellaneous.LED @ gpioPortG
 LED3: Miscellaneous.LED @ gpioPortI
