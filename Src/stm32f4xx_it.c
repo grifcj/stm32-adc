@@ -1,7 +1,7 @@
 #include "main.h"
 #include "common.h"
 
-#include "stm32f4xx_it.h"
+#include "stm32f4xx_hal.h"
 
 void NMI_Handler(void) { SystemHalt("NMI"); }
 void HardFault_Handler(void) { SystemHalt("Hardfault"); }
@@ -15,4 +15,8 @@ void PendSV_Handler(void) { }
 
 void SysTick_Handler(void) { HAL_IncTick(); }
 
-// TODO Add ADC interrupts for interrupt mode
+extern ADC_HandleTypeDef hadc1;
+void ADC_IRQHandler(void)
+{
+   HAL_ADC_IRQHandler(&hadc1);
+}

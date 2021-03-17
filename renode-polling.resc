@@ -10,17 +10,4 @@ macro reset
    sysbus.cpu VectorTableOffset 0x8000000
 """
 
-macro readADC
-"""
-   sysbus.gpioPortC.TamperButton Press
-   sleep 0.2
-   sysbus.gpioPortC.TamperButton Release
-"""
-
 runMacro $reset
-
-start
-
-runMacro $readADC
-runMacro $readADC
-runMacro $readADC

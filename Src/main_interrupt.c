@@ -1,5 +1,6 @@
 #include "main.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -7,6 +8,8 @@
 #include "common.h"
 
 ADC_HandleTypeDef hadc1 = {};
+bool isConversionComplete = false;
+uint32_t adcData = 0;
 
 static void ADC_Init(void)
 {
@@ -37,6 +40,10 @@ static void ADC_Init(void)
    {
       SystemHalt("HAL_ADC_ConfigChannel");
    }
+
+   // Enable interrupt
+   HAL_NVIC_SetPriority(ADC_IRQn, 4, 0);
+   HAL_NVIC_EnableIRQ(ADC_IRQn);
 }
 
 void InitHardware()
@@ -55,34 +62,83 @@ void InitHardware()
    ADC_Init();
 }
 
+bool TimeElapsed(uint32_t startTick, uint32_t timeoutMs)
+{
+   uint32_t curTick = HAL_GetTick();
+   uint32_t elapsed = (curTick > startTick) ? curTick - startTick : 0;
+   return elapsed > timeoutMs;
+}
+
+void Lock()
+{
+   HAL_NVIC_DisableIRQ(ADC_IRQn);
+}
+
+void Unlock()
+{
+   HAL_NVIC_EnableIRQ(ADC_IRQn);
+}
+
+bool IsConversionComplete()
+{
+   Lock();
+   bool isComplete = isConversionComplete;
+   Unlock();
+   return isComplete;
+}
+
+void ReadAndPrintData()
+{
+   Lock();
+   uint32_t data = adcData;
+   isConversionComplete = false;
+   adcData = 0;
+   Unlock();
+
+   printf("ADC Data: %d\n", data);
+}
+
 void SampleOneChannel()
 {
-   Log("Try adc conversion");
+   Log("Try interrupt adc conversion");
 
    // Start conversion
-   if (HAL_ADC_Start(&hadc1) != HAL_OK)
+   if (HAL_ADC_Start_IT(&hadc1) != HAL_OK)
    {
-      Log("HAL_ADC_Start failed");
+      Log("HAL_ADC_Start_IT failed");
    }
 
    // Wait until conversion done
-   uint32_t timeoutMs = 100;
-   if (HAL_ADC_PollForConversion(&hadc1, timeoutMs) != HAL_OK)
+   uint32_t startTick = HAL_GetTick();
+   const uint32_t TIMEOUT_MS = 100;
+   while (1)
    {
-      Log("Timeout waiting for conversion to complete");
-   }
-   else
-   {
-      // Get sample
-      uint32_t data = HAL_ADC_GetValue(&hadc1);
-      printf("ADC Data: %d\n", data);
-   }
+      if (TimeElapsed(startTick, TIMEOUT_MS))
+      {
+         break;
+      }
 
-   // Stop conversion...although should stop after single conversion
-   if (HAL_ADC_Stop(&hadc1) != HAL_OK)
-   {
-      Log("HAL_ADC_Stop");
+      if (IsConversionComplete())
+      {
+         ReadAndPrintData();
+         break;
+      }
+
+      HAL_Delay(10);
    }
+}
+
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* adc)
+{
+   isConversionComplete = true;
+   adcData = HAL_ADC_GetValue(adc);
+}
+
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef* adc)
+{
+   static int count = 0;
+   printf("ADC Error! count=%d\n", count++);
 }
 
 int main(void)

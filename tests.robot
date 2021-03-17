@@ -10,48 +10,54 @@ My Test Setup
     Reset Emulation
     Execute Command         path add @${CURDIR}
 
-Send CAN Message
-    Execute Command         mach set "sender"
-    Execute Command         runMacro $sendCANMessage
+Feed Constant
+    [Arguments]       ${sample}  ${channel}
+    Execute Command   sysbus.adc1 FeedSample ${sample} ${channel} -1
 
-Received CAN Message
-    [Arguments]             ${tester}
-    Wait For Line On Uart   Received CAN message  testerId=${tester}  timeout=0.5
-    Wait For Line On Uart   Received data matches transmitted data  testerId=${tester}  timeout=0.5
+# Feed SawTooth
+#     [Arguments]       ${sample}
+#     Execute Command   sysbus.adc1 FeedSample ${sample}
+#
+# Feed SineWave
+#     [Arguments]       ${sample}
+#     Execute Command   sysbus.adc1 InputConstant ${sample}
+
+Received Constant
+    [Arguments]             ${sample}
+    Wait For Line On Uart   Data read: ${sample}  timeout=0.2
+    Wait For Line On Uart   Data read: ${sample}  timeout=0.2
+    Wait For Line On Uart   Data read: ${sample}  timeout=0.2
+
+# Received SawTooth
+#     [Arguments]             ${start}
+#     Wait For Line On Uart   Data read: ${start}  timeout=0.2
+#     Wait For Line On Uart   Data read: ${start} + 1  timeout=0.2
+#     Wait For Line On Uart   Data read: ${start} + 2  timeout=0.2
 
 *** Test Cases ***
-Polling loopback can send and receive message
-    Execute Command         set bin @build/loopback
-    Execute Command         include @renode-loopback.resc
+Polling ADC can read sample
+    Execute Command         include @renode-polling.resc
 
-    ${tester} =  Create Terminal Tester  sysbus.uart1
-
-    Start Emulation
-
-    Send CAN Message
-    Received CAN Message  ${tester}
-
-Interrupt loopback can send and receive message
-    Execute Command         set bin @build/loopback_interrupt
-    Execute Command         include @renode-loopback.resc
-
-    ${tester} =  Create Terminal Tester  sysbus.uart1
+    Create Terminal Tester  sysbus.uart1
 
     Start Emulation
 
-    Send CAN Message
-    Received CAN Message  ${tester}
+    Feed Constant  sample=1  channel=1
+    Received Constant  sample=1
 
-Two controllers can communicate across CANHub
-    Execute Command         set bin @build/interrupt
-    Execute Command         include @renode-canhub.resc
+    Feed Constant  sample=5  channel=1
+    Received Constant  sample=5
 
-    ${tester1} =  Create Terminal Tester  sysbus.uart1  machine=receiver1
-    ${tester2} =  Create Terminal Tester  sysbus.uart1  machine=receiver2
+Interrupt ADC can read sample
+    Execute Command         include @renode-interrupt.resc
+
+    Create Terminal Tester  sysbus.uart1
 
     Start Emulation
 
-    Send CAN Message
+    Feed Constant  sample=1  channel=1
+    Received Constant  sample=1
 
-    Received CAN Message  ${tester1}
-    Received CAN Message  ${tester2}
+    Feed Constant  sample=5  channel=1
+    Received Constant  sample=5
+

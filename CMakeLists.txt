@@ -79,3 +79,4 @@ function(DefineExe name main)
 endfunction()
 
 DefineExe(polling Src/main_polling.c)
+DefineExe(interrupt Src/main_interrupt.c)
