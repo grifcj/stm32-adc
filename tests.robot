@@ -28,6 +28,10 @@ Received Constant
     Wait For Line On Uart   ADC Data: ${sample}  timeout=0.2
     Wait For Line On Uart   ADC Data: ${sample}  timeout=0.2
 
+Received ADC Data On Channel
+    [Arguments]             ${channel}  ${sample}
+    Wait For Line On Uart   Channel: ${channel} ADC Data: ${sample}  timeout=0.2
+
 # Received SawTooth
 #     [Arguments]             ${start}
 #     Wait For Line On Uart   ADC Data: ${start}  timeout=0.2
@@ -47,6 +51,21 @@ Polling ADC can read sample
 
     Feed Constant  sample=5  channel=1
     Received Constant  sample=5
+
+Polling can scan ADC channels
+    Execute Command         include @polling_scan.resc
+
+    Create Terminal Tester  sysbus.uart1
+
+    Feed Constant  sample=1  channel=1
+    Feed Constant  sample=2  channel=2
+    Feed Constant  sample=3  channel=3
+
+    Start Emulation
+
+    Received ADC Data On Channel  channel=1  sample=1
+    Received ADC Data On Channel  channel=1  sample=1
+    Received ADC Data On Channel  channel=1  sample=1
 
 Interrupt ADC can read sample
     Execute Command         include @interrupt.resc

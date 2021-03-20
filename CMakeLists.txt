@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.13)
 project(ADC LANGUAGES C CXX ASM)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+set(CMAKE_CXX_STANDARD 20)
+
+add_compile_options(
+   $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:$<$<VERSION_EQUAL:${CMAKE_CXX_STANDARD},20>:-Wno-volatile>>)
 
 add_library(cmsis INTERFACE)
 target_include_directories(cmsis INTERFACE
@@ -81,3 +85,4 @@ endfunction()
 DefineExe(polling Src/main_polling.c)
 DefineExe(interrupt Src/main_interrupt.c)
 DefineExe(dma Src/main_dma.c)
+DefineExe(polling_scan Src/main_polling_scan.cpp)
