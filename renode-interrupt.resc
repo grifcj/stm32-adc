@@ -1,2 +1,0 @@
-set bin @build/interrupt
-include @renode-polling.resc

@@ -16,6 +16,8 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
       __HAL_RCC_ADC1_CLK_ENABLE();
       __HAL_RCC_GPIOA_CLK_ENABLE();
 
+      // Configure GPIO on Port A as ADC inputs. These pins are common
+      // to all ADCs, i.e. ADC123_IN1, ADC123_IN2, ADC123_IN3.
       GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_2 |GPIO_PIN_3;
       GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
       GPIO_InitStruct.Pull = GPIO_NOPULL;

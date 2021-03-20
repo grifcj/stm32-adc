@@ -80,3 +80,4 @@ endfunction()
 
 DefineExe(polling Src/main_polling.c)
 DefineExe(interrupt Src/main_interrupt.c)
+DefineExe(dma Src/main_dma.c)
