@@ -84,5 +84,6 @@ endfunction()
 
 DefineExe(polling Src/main_polling.c)
 DefineExe(interrupt Src/main_interrupt.c)
-DefineExe(dma Src/main_dma.c)
+DefineExe(dma Src/main_dma.cpp)
 DefineExe(polling_scan Src/main_polling_scan.cpp)
+DefineExe(continuous_scan Src/main_continuous_scan.cpp)

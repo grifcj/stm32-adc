@@ -1,3 +1,11 @@
+#include <array>
+#include <iterator>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+extern "C"
+{
 #include "main.h"
 
 #include <stdbool.h>
@@ -6,25 +14,33 @@
 #include <string.h>
 
 #include "common.h"
+}
 
 ADC_HandleTypeDef hadc1 = {};
+
+static const std::array channelSequence = {
+   std::make_pair(1, ADC_CHANNEL_1),
+   std::make_pair(2, ADC_CHANNEL_2),
+   std::make_pair(3, ADC_CHANNEL_3)};
+static constexpr auto NUM_CHANNELS = std::size(channelSequence);
+
 bool isConversionComplete = false;
-uint32_t adcData = 0;
+uint32_t adcData[NUM_CHANNELS] = {};
 
 static void ADC_Init(void)
 {
    hadc1.Instance = ADC1;
    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
    hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-   hadc1.Init.ScanConvMode = DISABLE;
+   hadc1.Init.ScanConvMode = ENABLE;
    hadc1.Init.ContinuousConvMode = DISABLE;
    hadc1.Init.DiscontinuousConvMode = DISABLE;
    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-   hadc1.Init.NbrOfConversion = 1;
-   hadc1.Init.DMAContinuousRequests = DISABLE;
-   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+   hadc1.Init.NbrOfConversion = 3;
+   hadc1.Init.DMAContinuousRequests = ENABLE;
+   hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
    if (HAL_ADC_Init(&hadc1) != HAL_OK)
    {
       SystemHalt("HAL_ADC_Init");
@@ -32,13 +48,17 @@ static void ADC_Init(void)
 
    // Configure for the selected ADC regular channel its corresponding rank in
    // the sequencer and its sample time.
-   ADC_ChannelConfTypeDef channelConfig = {0};
-   channelConfig.Channel = ADC_CHANNEL_1;
-   channelConfig.Rank = 1;
-   channelConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-   if (HAL_ADC_ConfigChannel(&hadc1, &channelConfig) != HAL_OK)
+   for (auto [rank, channel] : channelSequence)
    {
-      SystemHalt("HAL_ADC_ConfigChannel");
+      // the sequencer and its sample time.
+      ADC_ChannelConfTypeDef channelConfig = {0};
+      channelConfig.Channel = channel;
+      channelConfig.Rank = rank;
+      channelConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+      if (HAL_ADC_ConfigChannel(&hadc1, &channelConfig) != HAL_OK)
+      {
+         SystemHalt("HAL_ADC_ConfigChannel");
+      }
    }
 
    // This handle only needed for this ADC
@@ -116,13 +136,19 @@ bool IsConversionComplete()
 
 void ReadAndPrintData()
 {
+   uint32_t data[NUM_CHANNELS];
+
    Lock();
-   uint32_t data = adcData;
    isConversionComplete = false;
-   adcData = 0;
+   memcpy(data, adcData, sizeof(adcData));
    Unlock();
 
-   printf("ADC Data: %d\n", data);
+   printf("Received All Channels: ");
+   for (size_t idx = 0; idx < NUM_CHANNELS - 1; ++idx)
+   {
+      printf("%d ", data[idx]);
+   }
+   printf("%d\n", data[NUM_CHANNELS - 1]);
 }
 
 void SampleOneChannel()
@@ -130,7 +156,7 @@ void SampleOneChannel()
    Log("Try interrupt adc conversion");
 
    // Start conversion
-   if (HAL_ADC_Start_DMA(&hadc1, &adcData, sizeof(adcData)) != HAL_OK)
+   if (HAL_ADC_Start_DMA(&hadc1, adcData, sizeof(adcData)) != HAL_OK)
    {
       Log("HAL_ADC_Start_DMA failed");
    }
@@ -158,7 +184,7 @@ void SampleOneChannel()
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* adc)
 {
    isConversionComplete = true;
-   adcData = HAL_ADC_GetValue(adc);
+   // (void)HAL_ADC_GetValue(adc);
 }
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef* adc)

@@ -67,18 +67,18 @@ Polling can scan ADC channels
     Received ADC Data On Channel  channel=1  sample=1
     Received ADC Data On Channel  channel=1  sample=1
 
-Interrupt ADC can read sample
-    Execute Command         include @interrupt.resc
+Scan mode can covert regular channel group
+    Execute Command         include @continuous_scan.resc
 
     Create Terminal Tester  sysbus.uart1
 
+    Feed Constant  sample=1  channel=1
+    Feed Constant  sample=2  channel=2
+    Feed Constant  sample=3  channel=3
+
     Start Emulation
 
-    Feed Constant  sample=1  channel=1
-    Received Constant  sample=1
-
-    Feed Constant  sample=5  channel=1
-    Received Constant  sample=5
+    Wait For Line On Uart   Received All Channels: 1 2 3  timeout=0.2
 
 DMA ADC can read sample
     Execute Command         include @dma.resc
