@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "main.h"
 #include "common.h"
 
@@ -18,10 +20,12 @@ void SysTick_Handler(void) { HAL_IncTick(); }
 extern ADC_HandleTypeDef hadc1;
 void ADC_IRQHandler(void)
 {
+   printf("ADC interrupt!\n");
    HAL_ADC_IRQHandler(&hadc1);
 }
 
 void DMA2_Stream0_IRQHandler(void)
 {
+   printf("DMA interrupt!\n");
    HAL_DMA_IRQHandler(hadc1.DMA_Handle);
 }
