@@ -4,37 +4,15 @@
 #include <utility>
 #include <vector>
 
+extern "C"
+{
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "shell/shell.h"
-
-extern "C"
-{
 #include "common.h"
 }
-
-int PollingSingleConversion(int argc, char* argv[]);
-int PollingScanRegular(int argc, char* argv[]);
-int InterruptSingleConversion(int argc, char* argv[]);
-int InterruptScanRegular(int argc, char* argv[]);
-int DmaSingleConversion(int argc, char* argv[]);
-int DmaScanRegular(int argc, char* argv[]);
-
-static const sShellCommand s_shell_commands[] =
-{
-   {"polling-single-conversion", PollingSingleConversion, ""},
-   {"polling-scan-regular", PollingScanRegular, ""},
-   {"interrupt-single-conversion", InterruptSingleConversion, ""},
-   {"interrupt-scan-regular", InterruptScanRegular, ""},
-   {"dma-single-conversion", DmaSingleConversion, ""},
-   {"dma-scan-regular", DmaScanRegular, ""},
-   {"help", shell_help_handler, "Lists all commands"},
-};
-
-const sShellCommand *const g_shell_commands = s_shell_commands;
-constexpr size_t g_num_shell_commands = std::size(s_shell_commands);
 
 ADC_HandleTypeDef hadc1 = {};
 
@@ -213,39 +191,35 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef* adc)
    printf("ADC Error! count=%d\n", count++);
 }
 
-int console_putc(char c) {
-  app_uart_put(c);
-  return 1;
-}
-
-char console_getc(void) {
-  uint8_t cr;
-  while (app_uart_get(&cr) != NRF_SUCCESS);
-  return (char)cr;
-}
-
-int main()
+std::map<std::string, std::function<void()>> tests =
 {
+   {"1", PollingADCCanReadSample},
+   {"2", PollingCanScanADCChannels},
+   {"3", DMACanScanADCChannels}
+};
+
+void WaitForTestNameOnUart()
+{
+   // UART READ?
+}
+
+int main(void)
+{
+   // InitHardware();
+   //
+   // while (1)
+   // {
+   //    uint32_t delayMs = 100;
+   //    HAL_Delay(delayMs);
+   //
+   //    SampleOneChannel();
+   // }
+
    InitHardware();
 
-   sShellImpl shell_impl =
+   if (WaitForTestNameOnUart(name))
    {
-      .send_char = console_putc,
-   };
-   shell_boot(&shell_impl);
-
-   char c;
-   while (true)
-   {
-      c = console_getc();
-      shell_receive_char(c);
-   }
-
-   while (1)
-   {
-      uint32_t delayMs = 100;
-      HAL_Delay(delayMs);
-
-      SampleOneChannel();
+      auto test = tests[name];
+      test();
    }
 }

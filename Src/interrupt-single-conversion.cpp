@@ -1,17 +1,61 @@
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#include "stm32f4xx_hal.h"
 
 #include "common.h"
 
-#include "stm32f4xx_hal_adc.h"
+#include "shell/shell.h"
 
-ADC_HandleTypeDef hadc1 = {};
+extern ADC_HandleTypeDef hadc1;
+
+namespace
+{
+
 bool isConversionComplete = false;
 uint32_t adcData = 0;
 
-static void ADC_Init(void)
+bool TimeElapsed(uint32_t startTick, uint32_t timeoutMs)
+{
+   uint32_t curTick = HAL_GetTick();
+   uint32_t elapsed = (curTick > startTick) ? curTick - startTick : 0;
+   return elapsed > timeoutMs;
+}
+
+void LockInterrupts()
+{
+   __set_PRIMASK(1);
+}
+
+void UnlockInterrupts()
+{
+   __set_PRIMASK(0);
+}
+
+bool IsConversionComplete()
+{
+   LockInterrupts();
+   bool isComplete = isConversionComplete;
+   UnlockInterrupts();
+   return isComplete;
+}
+
+void ReadAndPrintData()
+{
+   LockInterrupts();
+   uint32_t data = adcData;
+   isConversionComplete = false;
+   adcData = 0;
+   UnlockInterrupts();
+
+   shell_print_line("ADC Data: %d", data);
+}
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* adc)
+{
+   adcData = HAL_ADC_GetValue(adc);
+   isConversionComplete = true;
+   shell_print_line("Conversion complete");
+}
+
+void ADC_Init(void)
 {
    hadc1.Instance = ADC1;
    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
@@ -25,15 +69,24 @@ static void ADC_Init(void)
    hadc1.Init.NbrOfConversion = 1;
    hadc1.Init.DMAContinuousRequests = DISABLE;
    hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+   hadc1.ConvCpltCallback = HAL_ADC_ConvCpltCallback;
    if (HAL_ADC_Init(&hadc1) != HAL_OK)
    {
       SystemHalt("HAL_ADC_Init");
    }
 
+   if (HAL_ADC_RegisterCallback(
+            &hadc1,
+            HAL_ADC_CONVERSION_COMPLETE_CB_ID,
+            HAL_ADC_ConvCpltCallback) != HAL_OK)
+   {
+      SystemHalt("HAL_ADC_RegisterCallback");
+   }
+
    // Configure for the selected ADC regular channel its corresponding rank in
    // the sequencer and its sample time.
    ADC_ChannelConfTypeDef channelConfig = {0};
-   channelConfig.Channel = ADC_CHANNEL_1;
+   channelConfig.Channel = ADC_CHANNEL_0;
    channelConfig.Rank = 1;
    channelConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
    if (HAL_ADC_ConfigChannel(&hadc1, &channelConfig) != HAL_OK)
@@ -46,71 +99,19 @@ static void ADC_Init(void)
    HAL_NVIC_EnableIRQ(ADC_IRQn);
 }
 
-void InitHardware()
-{
-   // Init periperhal driver stack
-   HAL_Init();
-
-   // We don't necessarily need clocks for renode tests, but
-   // if we were to ever put on hardware would need them
-   SystemClock_Config();
-
-   // Use the uart for logging
-   UART_Init();
-
-   // We're testing ADC so initialize it of course
-   ADC_Init();
-}
-
-bool TimeElapsed(uint32_t startTick, uint32_t timeoutMs)
-{
-   uint32_t curTick = HAL_GetTick();
-   uint32_t elapsed = (curTick > startTick) ? curTick - startTick : 0;
-   return elapsed > timeoutMs;
-}
-
-void Lock()
-{
-   HAL_NVIC_DisableIRQ(ADC_IRQn);
-}
-
-void Unlock()
-{
-   HAL_NVIC_EnableIRQ(ADC_IRQn);
-}
-
-bool IsConversionComplete()
-{
-   Lock();
-   bool isComplete = isConversionComplete;
-   Unlock();
-   return isComplete;
-}
-
-void ReadAndPrintData()
-{
-   Lock();
-   uint32_t data = adcData;
-   isConversionComplete = false;
-   adcData = 0;
-   Unlock();
-
-   printf("ADC Data: %d\n", data);
-}
-
 void SampleOneChannel()
 {
-   Log("Try interrupt adc conversion");
-
    // Start conversion
    if (HAL_ADC_Start_IT(&hadc1) != HAL_OK)
    {
       Log("HAL_ADC_Start_IT failed");
    }
 
+   Log("HAL_ADC_Start_IT");
+
    // Wait until conversion done
    uint32_t startTick = HAL_GetTick();
-   const uint32_t TIMEOUT_MS = 100;
+   const uint32_t TIMEOUT_MS = 1000;
    while (1)
    {
       if (TimeElapsed(startTick, TIMEOUT_MS))
@@ -128,22 +129,11 @@ void SampleOneChannel()
    }
 }
 
-
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* adc)
-{
-   isConversionComplete = true;
-   adcData = HAL_ADC_GetValue(adc);
 }
 
-void HAL_ADC_ErrorCallback(ADC_HandleTypeDef* adc)
+int InterruptSingleConversion(int argc, char* argv[])
 {
-   static int count = 0;
-   printf("ADC Error! count=%d\n", count++);
-}
-
-int main(void)
-{
-   InitHardware();
+   ADC_Init();
 
    while (1)
    {

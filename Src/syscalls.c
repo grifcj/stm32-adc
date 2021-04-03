@@ -101,12 +101,13 @@ void _exit (int status)
 // Redirect to __io_putchar which we'll implement to print out of UART
 int _write(int file, char *ptr, int len)
 {
-	int DataIdx;
-
-   for (DataIdx = 0; DataIdx < len; DataIdx++)
-   {
-      __io_putchar( *ptr++ );
-   }
+   // No stdio, uart used for shell
+	/* int DataIdx; */
+   /*  */
+   /* for (DataIdx = 0; DataIdx < len; DataIdx++) */
+   /* { */
+   /*    __io_putchar( *ptr++ ); */
+   /* } */
 	return len;
 }
 

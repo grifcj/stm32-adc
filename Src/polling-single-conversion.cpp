@@ -1,13 +1,10 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_adc.h"
 
 #include "common.h"
 
-ADC_HandleTypeDef hadc1 = {};
+#include "shell/shell.h"
+
+extern ADC_HandleTypeDef hadc1;
 
 static void ADC_Init(void)
 {
@@ -31,7 +28,7 @@ static void ADC_Init(void)
    // Configure for the selected ADC regular channel its corresponding rank in
    // the sequencer and its sample time.
    ADC_ChannelConfTypeDef channelConfig = {0};
-   channelConfig.Channel = ADC_CHANNEL_1;
+   channelConfig.Channel = ADC_CHANNEL_0;
    channelConfig.Rank = 1;
    channelConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
    if (HAL_ADC_ConfigChannel(&hadc1, &channelConfig) != HAL_OK)
@@ -40,20 +37,7 @@ static void ADC_Init(void)
    }
 }
 
-void InitHardware()
-{
-   // Init periperhal driver stack
-   HAL_Init();
-
-   // We don't necessarily need clocks for renode tests, but
-   // if we were to ever put on hardware would need them
-   SystemClock_Config();
-
-   // Use the uart for logging
-   UART_Init();
-}
-
-void SampleOneChannel()
+static void SampleOneChannel()
 {
    Log("Try adc conversion");
 
@@ -73,24 +57,17 @@ void SampleOneChannel()
    {
       // Get sample
       uint32_t data = HAL_ADC_GetValue(&hadc1);
-      printf("ADC Data: %d\n", data);
-   }
-
-   // Stop conversion...although should stop after single conversion
-   if (HAL_ADC_Stop(&hadc1) != HAL_OK)
-   {
-      Log("HAL_ADC_Stop");
+      shell_print_line("ADC Data: %d", data);
    }
 }
 
-int main(void)
+int PollingSingleConversion(int argc, char* argv[])
 {
-   InitHardware();
+   ADC_Init();
 
    while (1)
    {
-      uint32_t delayMs = 100;
-      HAL_Delay(delayMs);
+      HAL_Delay(100);
 
       SampleOneChannel();
    }

@@ -2,6 +2,7 @@
 build/
 compile_commands.json
 options.mk
+/venv/
 
 /*.html
 /*.xml

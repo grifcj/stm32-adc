@@ -1,23 +1,26 @@
+#include <array>
 #include <utility>
-#include <vector>
 
-extern "C"
-{
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#include "stm32f4xx_hal.h"
 
 #include "common.h"
-}
 
-ADC_HandleTypeDef hadc1 = {};
+#include "shell/shell.h"
 
-static std::vector channelSequence = {
-   std::make_pair(1, ADC_CHANNEL_1),
-   std::make_pair(2, ADC_CHANNEL_2),
-   std::make_pair(3, ADC_CHANNEL_3)};
+extern ADC_HandleTypeDef hadc1;
 
-static void ADC_Init(void)
+namespace
+{
+
+using T = std::pair<int, int>;
+const std::array<T, 3> channelSequence =
+{
+   std::make_pair(1, ADC_CHANNEL_0),
+   std::make_pair(2, ADC_CHANNEL_1),
+   std::make_pair(3, ADC_CHANNEL_2)
+};
+
+void ADC_Init(void)
 {
    hadc1.Instance = ADC1;
    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
@@ -28,7 +31,7 @@ static void ADC_Init(void)
    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-   hadc1.Init.NbrOfConversion = 3;
+   hadc1.Init.NbrOfConversion = channelSequence.size();
    hadc1.Init.DMAContinuousRequests = DISABLE;
    hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
    if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -52,23 +55,7 @@ static void ADC_Init(void)
    }
 }
 
-void InitHardware()
-{
-   // Init periperhal driver stack
-   HAL_Init();
-
-   // We don't necessarily need clocks for renode tests, but
-   // if we were to ever put on hardware would need them
-   SystemClock_Config();
-
-   // Use the uart for logging
-   UART_Init();
-
-   // We're testing ADC so initialize it of course
-   ADC_Init();
-}
-
-void SampleChannels()
+void SampleAllChannels()
 {
    for (auto [rank, channel] : channelSequence)
    {
@@ -90,26 +77,22 @@ void SampleChannels()
       {
          // Get sample
          uint32_t data = HAL_ADC_GetValue(&hadc1);
-         printf("Channel: %d ADC Data: %d\n", rank - 1, data);
-      }
-
-      // Stop conversion...although should stop after single conversion
-      if (HAL_ADC_Stop(&hadc1) != HAL_OK)
-      {
-         Log("HAL_ADC_Stop");
+         shell_print_line("Channel: %d ADC Data: %d", rank - 1, data);
       }
    }
 }
 
-int main(void)
+}
+
+int PollingScanRegular(int argc, char* argv[])
 {
-   InitHardware();
+   ADC_Init();
 
    while (1)
    {
       uint32_t delayMs = 100;
       HAL_Delay(delayMs);
 
-      SampleChannels();
+      SampleAllChannels();
    }
 }

@@ -44,46 +44,37 @@ target_compile_definitions(hal PUBLIC
    STM32F407xx)
 target_include_directories(hal PUBLIC
    Drivers/STM32F4xx_HAL_Driver/Inc
-   Inc)
+   Src)
 target_link_libraries(hal PUBLIC cmsis)
 
-add_library(bsp
-   Drivers/BSP/Components/stmpe811/stmpe811.c
-   Drivers/BSP/STM324xG_EVAL/stm324xg_eval.c
-   Drivers/BSP/STM324xG_EVAL/stm324xg_eval_io.c
-   Drivers/BSP/STM324xG_EVAL/stm324xg_eval_sram.c
-   Drivers/BSP/STM324xG_EVAL/stm324xg_eval_audio.c
-   Drivers/BSP/STM324xG_EVAL/stm324xg_eval_camera.c
-   Drivers/BSP/STM324xG_EVAL/stm324xg_eval_eeprom.c
-   Drivers/BSP/STM324xG_EVAL/stm324xg_eval_io.c
-   Drivers/BSP/STM324xG_EVAL/stm324xg_eval_lcd.c
-   Drivers/BSP/STM324xG_EVAL/stm324xg_eval_sd.c
-   Drivers/BSP/STM324xG_EVAL/stm324xg_eval_sram.c)
-target_include_directories(bsp PUBLIC
-   Drivers/BSP
-   Drivers/BSP/STM324xG_EVAL
-   Drivers/BSP/Components/stmpe811)
-target_link_libraries(bsp PUBLIC
-   hal)
+add_subdirectory(shell)
 
 function(DefineExe name main)
    add_executable(${name}
       ${main}
-      Src/common.c
+      Src/common.cpp
       Src/startup_stm32f407xx.s
+      Src/polling-single-conversion.cpp
+      Src/polling-scan-regular.cpp
+      Src/interrupt-single-conversion.cpp
+      Src/dma-scan-regular.cpp
       Src/stm32f4xx_hal_msp.c
-      Src/stm32f4xx_it.c
+      Src/stm32f4xx_it.cpp
       Src/syscalls.c
       Src/system_stm32f4xx.c)
-   target_link_libraries(${name} PUBLIC g_nano bsp)
+   target_link_libraries(${name}
+      PUBLIC
+         g_nano
+         hal
+         shell)
    target_link_options(${name}
       PUBLIC
          -T ${CMAKE_CURRENT_LIST_DIR}/STM32F407IGHx_FLASH.ld
          -Wl,-Map=${name}.map)
 endfunction()
 
-DefineExe(polling Src/main_polling.c)
-DefineExe(interrupt Src/main_interrupt.c)
-DefineExe(dma Src/main_dma.cpp)
-DefineExe(polling_scan Src/main_polling_scan.cpp)
-DefineExe(continuous_scan Src/main_continuous_scan.cpp)
+DefineExe(test Src/main.cpp)
+# DefineExe(interrupt Src/main_interrupt.c)
+# DefineExe(dma Src/main_dma.cpp)
+# DefineExe(polling_scan Src/main_polling_scan.cpp)
+# DefineExe(continuous_scan Src/main_continuous_scan.cpp)
