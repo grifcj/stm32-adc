@@ -49,32 +49,16 @@ target_link_libraries(hal PUBLIC cmsis)
 
 add_subdirectory(shell)
 
-function(DefineExe name main)
-   add_executable(${name}
-      ${main}
-      Src/common.cpp
-      Src/startup_stm32f407xx.s
-      Src/polling-single-conversion.cpp
-      Src/polling-scan-regular.cpp
-      Src/interrupt-single-conversion.cpp
-      Src/dma-scan-regular.cpp
-      Src/stm32f4xx_hal_msp.c
-      Src/stm32f4xx_it.cpp
-      Src/syscalls.c
-      Src/system_stm32f4xx.c)
-   target_link_libraries(${name}
-      PUBLIC
-         g_nano
-         hal
-         shell)
-   target_link_options(${name}
-      PUBLIC
-         -T ${CMAKE_CURRENT_LIST_DIR}/STM32F407IGHx_FLASH.ld
-         -Wl,-Map=${name}.map)
-endfunction()
+file(GLOB srcs CONFIGURE_DEPENDS Src/*.c Src/*.cpp Src/*.s)
 
-DefineExe(test Src/main.cpp)
-# DefineExe(interrupt Src/main_interrupt.c)
-# DefineExe(dma Src/main_dma.cpp)
-# DefineExe(polling_scan Src/main_polling_scan.cpp)
-# DefineExe(continuous_scan Src/main_continuous_scan.cpp)
+add_executable(ADC ${srcs})
+target_link_libraries(ADC
+   PUBLIC
+      g_nano
+      hal
+      shell)
+target_link_options(ADC
+   PUBLIC
+      -T ${CMAKE_CURRENT_LIST_DIR}/STM32F407IGHx_FLASH.ld
+      -Wl,-Map=ADC.map)
+
