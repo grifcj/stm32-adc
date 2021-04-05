@@ -28,7 +28,7 @@ def monobash(ctx):
                 f" -v {path_to_renode}:/home/developer/renode"
                 f" -v {path_to_embed}:/home/developer/embed"
                 f" -w /home/developer/renode"
-                f" grifcj/monodevelop bash"),
+                f" grifcj/renodedev bash"),
             pty=True)
 
 # run monodevelop and debug peripheral model with these binaries
@@ -44,7 +44,7 @@ def runadc(ctx):
                 f" -v {path_to_embed}:{home}/embed"
                 f" -w /home/developer/renode"
                 f" -e DISPLAY=host.docker.internal:0"
-                f" grifcj/monodevelop"
+                f" grifcj/renodedev"
                 f" mono output/bin/Debug/Renode.exe"
                 f" -e 'path add @{home}/embed'"
                 f" -e 'include @{home}/embed/test.resc'"
@@ -61,7 +61,7 @@ def monodevelop(ctx, shell=False):
         f" -v {path_to_embed}:/home/developer/embed:cached"
         f" -w /home/developer/renode"
         f" -e DISPLAY=host.docker.internal:0"
-        f" grifcj/monodevelop monodevelop Renode.sln"))
+        f" grifcj/renodedev monodevelop Renode.sln"))
 
 @task
 def runtests(ctx):
