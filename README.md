@@ -13,7 +13,7 @@ or
 ```
 TOOLCHAIN_DIR=path/to/toolchain make build
 ```
-or with invoke & docker
+or with invoke & docker (will pull image grifcj/gnurm)
 ```
 python3 -m venv venv
 source venv/bin/activate
