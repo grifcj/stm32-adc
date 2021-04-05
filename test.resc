@@ -1,4 +1,4 @@
-$bin ?= @build/test
+$bin ?= @build/ADC
 
 mach create
 machine LoadPlatformDescription @platform.repl

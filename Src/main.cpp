@@ -21,24 +21,15 @@ char console_getc(void);
 
 int PollingSingleConversion(int argc, char* argv[]);
 int PollingScanRegular(int argc, char* argv[]);
+int InterruptConversion(int argc, char* argv[]);
 int DmaScanRegular(int argc, char* argv[]);
-int InterruptSingleConversion(int argc, char* argv[]);
-
-int InterruptScanRegular(int argc, char* argv[])
-{
-   return 0;
-}
-
-int DmaSingleConversion(int argc, char* argv[])
-{
-   return 0;
-}
 
 static const sShellCommand s_shell_commands[] =
 {
    {"polling-single-conversion", PollingSingleConversion, ""},
    {"polling-scan-regular", PollingScanRegular, ""},
-   {"interrupt-single-conversion", InterruptSingleConversion, ""},
+   {"interrupt-single-conversion", InterruptConversion, ""},
+   {"interrupt-continuous-conversion", InterruptConversion, ""},
    {"dma-scan-regular", DmaScanRegular, ""},
    {"help", shell_help_handler, "Lists all commands"},
 };

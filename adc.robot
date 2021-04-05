@@ -76,6 +76,23 @@ Interrupt ADC can read single channel
     Feed Constant      channel=0  sample=5
     Received Constant  channel=0  sample=5
 
+Interrupt ADC can read continuous single channel from single start
+    Execute Command         include @robot.resc
+
+    Create Terminal Tester  sysbus.uart1
+
+    Start Emulation
+
+    Feed Constant      channel=0  sample=1
+
+    Write Line To Uart  interrupt-continuous-conversion\n  waitForEcho=false
+
+    Received Constant  channel=0  sample=1
+    Received Constant  channel=0  sample=1
+    Received Constant  channel=0  sample=1
+    Received Constant  channel=0  sample=1
+    Received Constant  channel=0  sample=1
+
 DMA can scan ADC channels
     Execute Command         include @robot.resc
 

@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "stm32f4xx_hal.h"
 
 #include "common.h"
@@ -55,13 +57,13 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* adc)
    shell_print_line("Conversion complete");
 }
 
-void ADC_Init(void)
+void ADC_Init(bool isContinuous)
 {
    hadc1.Instance = ADC1;
    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
    hadc1.Init.Resolution = ADC_RESOLUTION_12B;
    hadc1.Init.ScanConvMode = DISABLE;
-   hadc1.Init.ContinuousConvMode = DISABLE;
+   hadc1.Init.ContinuousConvMode = (isContinuous) ? ENABLE : DISABLE;
    hadc1.Init.DiscontinuousConvMode = DISABLE;
    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
@@ -99,7 +101,7 @@ void ADC_Init(void)
    HAL_NVIC_EnableIRQ(ADC_IRQn);
 }
 
-void SampleOneChannel()
+void StartConversion()
 {
    // Start conversion
    if (HAL_ADC_Start_IT(&hadc1) != HAL_OK)
@@ -108,7 +110,10 @@ void SampleOneChannel()
    }
 
    Log("HAL_ADC_Start_IT");
+}
 
+void WaitForConversion()
+{
    // Wait until conversion done
    uint32_t startTick = HAL_GetTick();
    const uint32_t TIMEOUT_MS = 1000;
@@ -125,21 +130,53 @@ void SampleOneChannel()
          break;
       }
 
-      HAL_Delay(10);
+      // HAL_Delay(10);
    }
 }
 
-}
-
-int InterruptSingleConversion(int argc, char* argv[])
+void DoSingleConversion()
 {
-   ADC_Init();
+   Log("Do Single Conversion");
+
+   ADC_Init(false);
 
    while (1)
    {
       uint32_t delayMs = 100;
       HAL_Delay(delayMs);
 
-      SampleOneChannel();
+      StartConversion();
+      WaitForConversion();
    }
+}
+
+void DoContinuousConversion()
+{
+   Log("Do Continuous Conversion");
+
+   ADC_Init(true);
+
+   StartConversion();
+
+   while (1)
+   {
+      WaitForConversion();
+   }
+}
+
+}
+
+int InterruptConversion(int argc, char* argv[])
+{
+   bool isContinuous = nullptr != strstr(argv[0], "continuous");
+   if (isContinuous)
+   {
+      DoContinuousConversion();
+   }
+   else
+   {
+      DoSingleConversion();
+   }
+
+   return 0;
 }
